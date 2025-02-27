@@ -115,6 +115,131 @@ _print_done:
     popq    %rbp
     ret
 
+# Function: _add_operation
+# Pops two values from the stack, adds them, and pushes the result
+# Register usage:
+#   r12: Base address of our stack (preserved)
+#   r13: Stack size counter (preserved and may be modified)
+#   rax: First popped value and result (volatile)
+#   rbx: Second popped value (volatile)
+# Invariants:
+#   Checks if stack has at least 2 elements
+#   Decrements stack size counter by 1 after operation (2 pops, 1 push)
+.globl _add_operation
+_add_operation:
+    pushq   %rbp
+    movq    %rsp, %rbp
+    pushq   %rbx                # Save rbx as we'll use it
+    
+    # Check if stack has at least 2 elements
+    cmpq    $2, %r13
+    jl      _insufficient_elements
+    
+    # Pop first value (top of stack)
+    call    _pop
+    movq    %rax, %rbx          # Save first value in rbx
+    
+    # Pop second value
+    call    _pop
+    
+    # Add the values
+    addq    %rbx, %rax
+    
+    # Push result back to stack
+    call    _push
+    
+    popq    %rbx                # Restore rbx
+    popq    %rbp
+    ret
+
+# Function: _subtract_operation
+# Pops two values from the stack, subtracts them, and pushes the result
+# Register usage:
+#   r12: Base address of our stack (preserved)
+#   r13: Stack size counter (preserved and may be modified)
+#   rax: First popped value and result (volatile)
+#   rbx: Second popped value (volatile)
+# Invariants:
+#   Checks if stack has at least 2 elements
+#   Decrements stack size counter by 1 after operation (2 pops, 1 push)
+.globl _subtract_operation
+_subtract_operation:
+    pushq   %rbp
+    movq    %rsp, %rbp
+    pushq   %rbx                # Save rbx as we'll use it
+    
+    # Check if stack has at least 2 elements
+    cmpq    $2, %r13
+    jl      _insufficient_elements
+    
+    # Pop first value (top of stack) - this is the subtrahend
+    call    _pop
+    movq    %rax, %rbx          # Save subtrahend in rbx
+
+    # Pop second value - this is the minuend
+    call    _pop
+    
+
+    # Subtract: minuend - subtrahend (second_value - first_value)
+    subq    %rbx, %rax
+    
+    # Push result back to stack
+    call    _push
+    
+    popq    %rbx                # Restore rbx
+    popq    %rbp
+    ret
+
+# Function: _pop
+# Pops a value from the stack
+# Return value:
+#   rax: Popped value
+# Register usage:
+#   r12: Base address of our stack (preserved)
+#   r13: Stack size counter (preserved and may be modified)
+#   rdx: Temporary for calculating offset (volatile)
+# Invariants:
+#   Checks if stack is empty before popping
+#   Decrements stack size counter after successful pop
+.globl _pop
+_pop:
+    # Check if stack is empty
+    cmpq    $0, %r13
+    jle     _stack_empty
+    
+    # Decrement stack size
+    decq    %r13
+    
+    # Calculate position to retrieve value
+    movq    %r13, %rdx
+    imulq   $INT_SIZE, %rdx
+    
+    # Load value from stack
+    movl    (%r12, %rdx), %eax
+    
+    # Clear the value in the stack (optional but good practice)
+    movl    $0, (%r12, %rdx)
+    
+    ret
+    
+_stack_empty:
+    # Stack is empty, return 0
+    xorq    %rax, %rax
+    ret
+
+_insufficient_elements:
+    # Print error message
+    leaq    insufficient_elements_msg(%rip), %rsi
+    movq    $insufficient_elements_len, %rdx
+    call    _print_string
+    
+    # Exit program
+    movl    $SYS_EXIT, %eax
+    movl    $1, %edi            # Exit code 1 (error)
+    syscall
+    
+    ret  # We won't reach here, but for completeness
+
 .section __DATA,__data
 # Stack data structure
 .align 4
@@ -132,4 +257,8 @@ empty_stack:
 empty_stack_len = . - empty_stack
 
 newline:
-    .asciz "\n" 
+    .asciz "\n"
+
+insufficient_elements_msg:
+    .asciz "Error: Insufficient elements on stack for operation\n"
+insufficient_elements_len = . - insufficient_elements_msg
