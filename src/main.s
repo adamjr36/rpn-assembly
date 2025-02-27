@@ -46,5 +46,5 @@ _main:
 
 .section __DATA,__data
 welcome_msg:
-    .asciz "Stack Calculator\nEnter numbers to push to stack\nCommands: p (print stack), q (quit)\n"
+    .asciz "Stack Calculator\nEnter numbers to push to stack\nCommands: p (print stack), q (quit), + (add), - (subtract)\n"
 welcome_msg_len = . - welcome_msg 
