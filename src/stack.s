@@ -276,6 +276,64 @@ _insufficient_elements:
     
     ret  # We won't reach here, but for completeness
 
+# Function: _divide_operation
+# Pops two values from the stack, divides them, and pushes the result
+# Register usage:
+#   r12: Base address of our stack (preserved)
+#   r13: Stack size counter (preserved and may be modified)
+#   rax: First popped value and result (volatile)
+#   rbx: Second popped value (volatile)
+# Invariants:
+#   Checks if stack has at least 2 elements
+#   Checks for division by zero
+#   Decrements stack size counter by 1 after operation (2 pops, 1 push)
+.globl _divide_operation
+_divide_operation:
+    pushq   %rbp
+    movq    %rsp, %rbp
+    pushq   %rbx                # Save rbx as we'll use it
+    
+    # Check if stack has at least 2 elements
+    cmpq    $2, %r13
+    jl      _insufficient_elements
+    
+    # Pop first value (top of stack) - this is the divisor
+    call    _pop
+    movq    %rax, %rbx          # Save divisor in rbx
+    
+    # Check for division by zero
+    cmpq    $0, %rbx
+    je      _division_by_zero
+    
+    # Pop second value - this is the dividend
+    call    _pop
+    
+    # Clear rdx for division
+    xorq    %rdx, %rdx
+    
+    # Divide: dividend / divisor (second_value / first_value)
+    idivq   %rbx
+    
+    # Push result back to stack
+    call    _push
+    
+    popq    %rbx                # Restore rbx
+    popq    %rbp
+    ret
+
+_division_by_zero:
+    # Print error message
+    leaq    division_by_zero_msg(%rip), %rsi
+    movq    $division_by_zero_len, %rdx
+    call    _print_string
+    
+    # Exit program
+    movl    $SYS_EXIT, %eax
+    movl    $1, %edi            # Exit code 1 (error)
+    syscall
+    
+    ret  # We won't reach here, but for completeness
+
 .section __DATA,__data
 # Stack data structure
 .align 4
@@ -298,3 +356,7 @@ newline:
 insufficient_elements_msg:
     .asciz "Error: Insufficient elements on stack for operation\n"
 insufficient_elements_len = . - insufficient_elements_msg
+
+division_by_zero_msg:
+    .asciz "Error: Division by zero\n"
+division_by_zero_len = . - division_by_zero_msg

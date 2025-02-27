@@ -219,11 +219,25 @@ _check_subtract:
 _check_multiply:
     # Check for command '*' - multiply top two elements
     cmpb    $'*', %dl
-    jne     _check_quit
+    jne     _check_divide
     
     # Save current position before calling function
     pushq   %rcx
     call    _multiply_operation
+    popq    %rcx
+
+    movq    $0, %r10            # Reset negative flag
+    
+    jmp     _process_loop
+
+_check_divide:
+    # Check for command '/' - divide top two elements
+    cmpb    $'/', %dl
+    jne     _check_quit
+    
+    # Save current position before calling function
+    pushq   %rcx
+    call    _divide_operation
     popq    %rcx
 
     movq    $0, %r10            # Reset negative flag
