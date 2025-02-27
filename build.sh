@@ -1,7 +1,7 @@
 #!/bin/bash
 # build.sh - Compiles the stack calculator program
-# Author: Original author
-# Date: Current date
+# Author: Adam Rubinstein
+# Date: 02/27/2025
 
 # Create build directory if it doesn't exist
 mkdir -p build
