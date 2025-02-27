@@ -105,7 +105,6 @@ _process_loop:
     # Check if the next character is a digit (to determine if it's a negative sign)
     # Save current position
     movq    %rcx, %r8           # Use r8 to save position temporarily
-    addq    $1, %r8
     
     # Check if we've reached the end of the buffer
     cmpq    %r15, %r8
@@ -123,6 +122,7 @@ _process_loop:
     # Next character is a digit, so this is a negative sign
     movq    $1, %rbx            # Set flag that we're parsing a number
     movq    $1, %r10            # Set flag for negative number
+    movq    $0, %rax            # Reset current number
     jmp     _process_loop
     
 _minus_as_command:
@@ -205,7 +205,7 @@ _check_add:
 _check_subtract:
     # Check for command '-' - subtract top two elements
     cmpb    $'-', %dl
-    jne     _check_quit
+    jne     _check_multiply
     
     # Save current position before calling function
     pushq   %rcx
@@ -215,7 +215,21 @@ _check_subtract:
     movq    $0, %r10            # Reset negative flag
     
     jmp     _process_loop
+
+_check_multiply:
+    # Check for command '*' - multiply top two elements
+    cmpb    $'*', %dl
+    jne     _check_quit
     
+    # Save current position before calling function
+    pushq   %rcx
+    call    _multiply_operation
+    popq    %rcx
+
+    movq    $0, %r10            # Reset negative flag
+    
+    jmp     _process_loop
+
 _check_quit:
     # Check for command 'q' - quit program
     cmpb    $'q', %dl

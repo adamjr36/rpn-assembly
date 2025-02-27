@@ -179,9 +179,45 @@ _subtract_operation:
     # Pop second value - this is the minuend
     call    _pop
     
-
     # Subtract: minuend - subtrahend (second_value - first_value)
     subq    %rbx, %rax
+    
+    # Push result back to stack
+    call    _push
+    
+    popq    %rbx                # Restore rbx
+    popq    %rbp
+    ret
+
+# Function: _multiply_operation
+# Pops two values from the stack, multiplies them, and pushes the result
+# Register usage:
+#   r12: Base address of our stack (preserved)
+#   r13: Stack size counter (preserved and may be modified)
+#   rax: First popped value (volatile)
+#   rbx: Second popped value (volatile)
+# Invariants:
+#   Checks if stack has at least 2 elements
+#   Decrements stack size counter by 1 after operation (2 pops, 1 push)
+.globl _multiply_operation
+_multiply_operation:
+    pushq   %rbp
+    movq    %rsp, %rbp
+    pushq   %rbx                # Save rbx as we'll use it
+    
+    # Check if stack has at least 2 elements
+    cmpq    $2, %r13
+    jl      _insufficient_elements
+
+    # Pop first value (top of stack)
+    call    _pop
+    movq    %rax, %rbx          # Save first value in rbx
+    
+    # Pop second value
+    call    _pop
+    
+    # Multiply the values
+    imulq   %rbx, %rax
     
     # Push result back to stack
     call    _push
